@@ -5855,11 +5855,23 @@ void dump_vmcs(void)
 }
 
 /*
+ * Added Counter to the files
+*/
+extern atomic_t indexCount;
+extern atomic64_t timeCount;
+/* u64 end_time;
+* u64 start_time;
+*/
+
+
+/*
  * The guest has exited.  See if we can fix it or if we need userspace
  * assistance.
  */
 static int vmx_handle_exit(struct kvm_vcpu *vcpu)
 {
+       atomic_inc(&indexCount);  
+       u64 start_time = rdtsc();
 	struct vcpu_vmx *vmx = to_vmx(vcpu);
 	u32 exit_reason = vmx->exit_reason;
 	u32 vectoring_info = vmx->idt_vectoring_info;
@@ -5946,9 +5958,16 @@ static int vmx_handle_exit(struct kvm_vcpu *vcpu)
 
 	if (exit_reason < kvm_vmx_max_exit_handlers
 	    && kvm_vmx_exit_handlers[exit_reason])
-		return kvm_vmx_exit_handlers[exit_reason](vcpu);
-	else {
-		vcpu_unimpl(vcpu, "vmx: unexpected exit reason 0x%x\n",
+		
+             {
+        int ret_time = kvm_vmx_exit_handlers[exit_reason](vcpu);
+        u64 end_time = rdtsc() - start_time ;
+        atomic64_add(end_time, &timeCount);
+        return ret_time;
+        }
+       else { 
+
+                vcpu_unimpl(vcpu, "vmx: unexpected exit reason 0x%x\n",
 				exit_reason);
 		dump_vmcs();
 		vcpu->run->exit_reason = KVM_EXIT_INTERNAL_ERROR;
