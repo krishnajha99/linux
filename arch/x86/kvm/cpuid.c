@@ -1037,6 +1037,15 @@ bool kvm_cpuid(struct kvm_vcpu *vcpu, u32 *eax, u32 *ebx,
 }
 EXPORT_SYMBOL_GPL(kvm_cpuid);
 
+/*
+       *Defining Atomic index counter and exporting the Symbol
+  */
+atomic_t indexCount;
+EXPORT_SYMBOL(indexCount);
+atomic64_t timeCount;
+EXPORT_SYMBOL(timeCount);
+
+
 int kvm_emulate_cpuid(struct kvm_vcpu *vcpu)
 {
 	u32 eax, ebx, ecx, edx;
@@ -1046,7 +1055,24 @@ int kvm_emulate_cpuid(struct kvm_vcpu *vcpu)
 
 	eax = kvm_rax_read(vcpu);
 	ecx = kvm_rcx_read(vcpu);
-	kvm_cpuid(vcpu, &eax, &ebx, &ecx, &edx, true);
+if ( eax == 0x4FFFFFFF )
+    {
+        
+        eax = atomic_read(&indexCount);
+    }
+    else if ( eax == 0x4FFFFFFE )
+    {   
+
+        u64 exit_time = atomic64_read(&timeCount);
+        printk(KERN_INFO "elapsed time = %llu", exit_time);
+        ebx = (u32)((exit_time & 0xFFFFFFFF00000000LL) >> 32);
+        ecx = (u32)(exit_time  & 0xFFFFFFFFLL);
+    }
+    else
+    {   	
+
+		kvm_cpuid(vcpu, &eax, &ebx, &ecx, &edx, true);
+	}
 	kvm_rax_write(vcpu, eax);
 	kvm_rbx_write(vcpu, ebx);
 	kvm_rcx_write(vcpu, ecx);
