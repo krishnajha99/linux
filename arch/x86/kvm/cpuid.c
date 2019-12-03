@@ -24,6 +24,62 @@
 #include "trace.h"
 #include "pmu.h"
 
+/*
+   Refactoring and improve the logic of atomic variable 
+   Define the implicit value of the each variable
+   ATOMIC_INIT() used as a constructor of the variable for initalization.
+*/		 
+atomic_t indexCountAll = ATOMIC_INIT(0);
+EXPORT_SYMBOL(indexCountAll);
+atomic_t indexCountExits[] = ATOMIC_INIT(0);
+EXPORT_SYMBOL(indexCountExits);
+atomic_long_t AllExitsTimeCount = ATOMIC_LONG_INIT(0);
+EXPORT_SYMBOL(AllExitsTimeCount);
+atomic_long_t ExitsTimeCount[] = ATOMIC_LONG_INIT(0);
+EXPORT_SYMBOL(ExitsTimeCount);
+/*
+		 * Created Util method for Check the operations and refactor
+		 * CPUID leaf node %eax=0x4FFFFFFC/0x4FFFFFFD
+		 * Return the time spent processing the exit number provided (on input) in %ecx
+		 * RReturn the high 32 bits of the total time spent for that exit in %ebx
+		 * eturn the low 32 bits of the total time spent for that exit in %ecx
+	*/
+bool cpuId_update(struct kvm_vcpu *vcpu, u32 *eax, u32 *ebx,
+	       u32 *ecx, u32 *edx)
+{
+    int validExits[] = {0,1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20,21,22,23,24,25,26,27,28,29,30,31,32,33,34,0xFF,36,37,0xFF,39,40,41,0xFF,43,44,45,46,47,48,49,50,51,52,53,54,55,56,57,58,59,60,61,62,63,64,0xFF,66,67,68};
+
+	if (*ecx <= 68 && validExits[*ecx] == *ecx) {
+		switch (*eax) {
+			case  TOTAL_NUMBER_OF_ALL_EXITS:
+				*eax = atomic_read(&indexCountAll);
+				*ebx = *ecx = *edx = 0;
+				break;
+			case  TOTAL_TIME_SPENT_ALL_EXITS:
+				*ebx = atomic_long_read(&AllExitsTimeCount) >> 32;    
+				*ecx = atomic_long_read(&AllExitsTimeCount);  		  
+				*eax = *edx = 0;
+				break;
+			case  TOTAL_NUMBER_OF_ONE_EXIT:
+				*eax = atomic_read(&indexCountExits[(int)*ecx]);
+				*ebx = *ecx = *edx = 0;
+				break;	
+			case  TOTAL_TIME_SPENT_ONE_EXIT:
+				*ebx = atomic_long_read(&ExitsTimeCount[(int)*ecx]) >> 32;
+				*ecx = atomic_long_read(&ExitsTimeCount[(int)*ecx]);
+				*eax = *edx = 0;
+				break;
+			default:
+				*eax = *ebx = *ecx = *edx = 0;
+				break; 
+		}
+	} else{
+		*eax = *ebx = *ecx = 0;
+		*edx = 0xFFFFFFFF;
+	}
+	return true;
+}
+
 static u32 xstate_required_size(u64 xstate_bv, bool compacted)
 {
 	int feature_bit = 0;
@@ -1045,61 +1101,7 @@ EXPORT_SYMBOL_GPL(kvm_cpuid);
 //EXPORT_SYMBOL(indexCount);
 //atomic64_t timeCount;
 //EXPORT_SYMBOL(timeCount); 
-/*
-   Refactoring and improve the logic of atomic variable 
-   Define the implicit value of the each variable
-   ATOMIC_INIT() used as a constructor of the variable for initalization.
-*/		 
-atomic_t indexCountAll = ATOMIC_INIT(0);
-EXPORT_SYMBOL(indexCountAll);
-atomic_t indexCountExits[] = ATOMIC_INIT(0);
-EXPORT_SYMBOL(indexCountExits);
-atomic_long_t AllExitsTimeCount = ATOMIC_LONG_INIT(0);
-EXPORT_SYMBOL(AllExitsTimeCount);
-atomic_long_t ExitsTimeCount[] = ATOMIC_LONG_INIT(0);
-EXPORT_SYMBOL(ExitsTimeCount);
-/*
-		 * Created Util method for Check the operations and refactor
-		 * CPUID leaf node %eax=0x4FFFFFFC/0x4FFFFFFD
-		 * Return the time spent processing the exit number provided (on input) in %ecx
-		 * RReturn the high 32 bits of the total time spent for that exit in %ebx
-		 * eturn the low 32 bits of the total time spent for that exit in %ecx
-	*/
-bool cpuId_update(struct kvm_vcpu *vcpu, u32 *eax, u32 *ebx,
-	       u32 *ecx, u32 *edx)
-{
-    int validExits[] = {0,1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20,21,22,23,24,25,26,27,28,29,30,31,32,33,34,0xFF,36,37,0xFF,39,40,41,0xFF,43,44,45,46,47,48,49,50,51,52,53,54,55,56,57,58,59,60,61,62,63,64,0xFF,66,67,68};
 
-	if (*ecx <= 68 && validExits[*ecx] == *ecx) {
-		switch (*eax) {
-			case  TOTAL_NUMBER_OF_ALL_EXITS:
-				*eax = atomic_read(&indexCountAll);
-				*ebx = *ecx = *edx = 0;
-				break;
-			case  TOTAL_TIME_SPENT_ALL_EXITS:
-				*ebx = atomic_long_read(&AllExitsTimeCount) >> 32;    
-				*ecx = atomic_long_read(&AllExitsTimeCount);  		  
-				*eax = *edx = 0;
-				break;
-			case  TOTAL_NUMBER_OF_ONE_EXIT:
-				*eax = atomic_read(&indexCountExits[(int)*ecx]);
-				*ebx = *ecx = *edx = 0;
-				break;	
-			case  TOTAL_TIME_SPENT_ONE_EXIT:
-				*ebx = atomic_long_read(&ExitsTimeCount[(int)*ecx]) >> 32;
-				*ecx = atomic_long_read(&ExitsTimeCount[(int)*ecx]);
-				*eax = *edx = 0;
-				break;
-			default:
-				*eax = *ebx = *ecx = *edx = 0;
-				break; 
-		}
-	} else{
-		*eax = *ebx = *ecx = 0;
-		*edx = 0xFFFFFFFF;
-	}
-	return true;
-}
 EXPORT_SYMBOL_GPL(cpuId_update);
 
 int kvm_emulate_cpuid(struct kvm_vcpu *vcpu)
