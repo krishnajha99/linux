@@ -6,6 +6,13 @@
 #include <asm/cpu.h>
 #include <asm/processor.h>
 
+//Parameters for the Total Cout
+#define LEAF_32_BITS                0x4FFFFFFC
+#define TOTAL_NUMBER_OF_ALL_EXITS   0x4FFFFFFF
+#define TOTAL_TIME_SPENT_ALL_EXITS  0x4FFFFFFE
+#define TOTAL_NUMBER_OF_ONE_EXIT    0x4FFFFFFD
+#define TOTAL_TIME_SPENT_ONE_EXIT   0x4FFFFFFC
+
 int kvm_update_cpuid(struct kvm_vcpu *vcpu);
 bool kvm_mpx_supported(void);
 struct kvm_cpuid_entry2 *kvm_find_cpuid_entry(struct kvm_vcpu *vcpu,
