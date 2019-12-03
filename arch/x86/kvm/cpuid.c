@@ -1071,8 +1071,8 @@ int kvm_emulate_cpuid(struct kvm_vcpu *vcpu)
 	eax = kvm_rax_read(vcpu);
 	ecx = kvm_rcx_read(vcpu);
 	/* Refactored using the Util method for all the Operations. */
-	cpuId_res = eax & ASSIGNMENT_2_LEAF;
-	if (cpuId_res == ASSIGNMENT_2_LEAF ){
+	cpuId_res = eax & LEAF_32_BITS;
+	if (cpuId_res == LEAF_32_BITS ){
 		cpuId_update(vcpu, &eax, &ebx, &ecx, &edx);
 	} else {
 		kvm_cpuid(vcpu, &eax, &ebx, &ecx, &edx, true);
