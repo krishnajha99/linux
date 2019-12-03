@@ -13,6 +13,12 @@
 #define TOTAL_NUMBER_OF_ONE_EXIT    0x4FFFFFFD
 #define TOTAL_TIME_SPENT_ONE_EXIT   0x4FFFFFFC
 
+extern atomic_t indexCountAll; 
+extern atomic_t indexCountExits[100];
+extern atomic_long_t AllExitsTimeCount; 
+extern atomic_long_t ExitsTimeCount[100];
+bool cpuId_update(struct kvm_vcpu *vcpu, u32 *eax, u32 *ebx, u32 *ecx, u32 *edx);
+
 int kvm_update_cpuid(struct kvm_vcpu *vcpu);
 bool kvm_mpx_supported(void);
 struct kvm_cpuid_entry2 *kvm_find_cpuid_entry(struct kvm_vcpu *vcpu,
