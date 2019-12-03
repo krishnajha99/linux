@@ -5874,14 +5874,14 @@ static int vmx_handle_exit(struct kvm_vcpu *vcpu)
    Refactoring and improve the logic of atomic variable 
    Define the implicit value of the each variable
 */	
-	u64  end_time = 0; 
-	u64  inital_time = rdtsc();
-	atomic_inc(&indexCountAll);
-	atomic_inc(&indexCountExits[exit_reason]);  
+
 	struct vcpu_vmx *vmx = to_vmx(vcpu);
 	u32 exit_reason = vmx->exit_reason;
 	u32 vectoring_info = vmx->idt_vectoring_info;
-
+        u64  end_time = 0; 
+	u64  inital_time = rdtsc();
+	atomic_inc(&indexCountAll);
+	atomic_inc(&indexCountExits[exit_reason]);  
 	trace_kvm_exit(exit_reason, vcpu, KVM_ISA_VMX);
 
 	/*
